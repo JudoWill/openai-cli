@@ -67,11 +67,11 @@ class ChatCompletionClient(CompletionClient):
     
     
 
-def build_client(token: str, api_url: str, completion: bool):
+def build_client(token: str, api_url: str, chat: bool):
     
-    if completion:
-        return build_completion_client(token, api_url)
-    return build_chatcompletion_client(token, api_url)
+    if chat:
+        return build_chatcompletion_client(token, api_url)
+    return build_completion_client(token, api_url)
     
     
 def build_completion_client(token: str, api_url: str) -> CompletionClient:
