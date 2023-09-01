@@ -3,8 +3,7 @@ import os
 
 import click
 
-from openai_cli.client import build_completion_client
-
+from openai_cli.client import build_client
 
 @click.group()
 def cli():
@@ -15,11 +14,18 @@ def cli():
 @click.argument("source", type=click.File("rt", encoding="utf-8"))
 @click.option("-t", "--token", default="", help="OpenAI API token")
 @click.option(
-    "-m", "--model", default="text-davinci-003", help="OpenAI model option. (i.e. code-davinci-002)"
+    "-m", "--model", default="gpt-3.5-turbo", help="OpenAI model option. (i.e. gpt4)"
 )
-def complete(source: io.TextIOWrapper, token: str, model: str) -> None:
+@click.option(
+    "-c", "--completion", default=False, help="Model uses old-style completion API (i.e. code-davinci-002)"
+)
+def complete(source: io.TextIOWrapper, token: str, model: str, completion: bool) -> None:
     """Return OpenAI completion for a prompt from SOURCE."""
-    client = build_completion_client(token=get_token(token), api_url=get_api_url())
+    
+    client = build_client(get_token(token),
+                          get_api_url(completion),
+                          completion)
+        
     prompt = source.read()
     result = client.generate_response(prompt, model)
     click.echo(result)
@@ -28,18 +34,27 @@ def complete(source: io.TextIOWrapper, token: str, model: str) -> None:
 @cli.command()
 @click.option("-t", "--token", default="", help="OpenAI API token")
 @click.option(
-    "-m", "--model", default="text-davinci-003", help="OpenAI model option. (i.e. code-davinci-002)"
+    "-m", "--model", default="gpt-3.5-turbo", help="OpenAI model option. (i.e. code-davinci-002)"
 )
-def repl(token: str, model: str) -> None:
+@click.option(
+    "-c", "--completion", default=False, help="Model uses old-style completion API (i.e. code-davinci-002)"
+)
+def repl(token: str, model: str, completion: bool) -> None:
     """Start interactive shell session for OpenAI completion API."""
-    client = build_completion_client(token=get_token(token), api_url=get_api_url())
+
+    client = build_client(get_token(token), 
+                          get_api_url(completion),
+                          completion)
+
     while True:
         print(client.generate_response(input("Prompt: "), model))
         print()
 
 
-def get_api_url() -> str:
-    return os.environ.get("OPENAI_API_URL", "https://api.openai.com/v1/completions")
+def get_api_url(completion) -> str:
+    if completion:
+        return os.environ.get("OPENAI_API_URL", "https://api.openai.com/v1/completions")
+    return os.environ.get("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
 
 
 def get_token(token: str) -> str:
