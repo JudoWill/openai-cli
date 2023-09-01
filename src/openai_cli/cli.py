@@ -11,23 +11,32 @@ def cli():
 
 
 @cli.command()
-@click.argument("source", type=click.File("rt", encoding="utf-8"))
+@click.argument("source", type=click.File("rt", encoding="utf-8"), nargs=-1)
 @click.option("-t", "--token", default="", help="OpenAI API token")
 @click.option(
-    "-m", "--model", default="gpt-3.5-turbo", help="OpenAI model option. (i.e. gpt4)"
+    "-m", "--model", default="gpt-3.5-turbo", 
+    help="OpenAI model option. (i.e. gpt4)"
 )
 @click.option(
-    "-c", "--completion", default=False, help="Model uses old-style completion API (i.e. code-davinci-002)"
+    "-c", "--completion", default=False, 
+    help="Model uses old-style completion API (i.e. code-davinci-002)"
 )
-def complete(source: io.TextIOWrapper, token: str, model: str, completion: bool) -> None:
+@click.option(
+    "-s", "--string", default=None, type=str,
+    help="String input to model. Placed AFTER the file input.",
+)
+def complete(source: io.TextIOWrapper, token: str, model: str, completion: bool, string: str) -> None:
     """Return OpenAI completion for a prompt from SOURCE."""
     
     client = build_client(get_token(token),
                           get_api_url(completion),
                           completion)
         
-    prompt = source.read()
-    result = client.generate_response(prompt, model)
+    prompt = [s.read() for s in source]
+    if string:
+        prompt.append(string)
+        
+    result = client.generate_response('\n'.join(prompt), model)
     click.echo(result)
 
 
